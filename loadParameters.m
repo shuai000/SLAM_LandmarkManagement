@@ -15,6 +15,8 @@ sensor.R_radar = [0.5^2 0; 0 (pi/180)^2];                   % Radar noise covari
 sensor.U_odometer = [0.02^2, 0; 0 (0.008 * pi/180)^2];      % Odometer noise covariance (velocity (m/s)^2, yaw rate variance (radians/s)^2)
 sensor.Q_process = [1.5e-3, 0 0; 0 1.5e-3 0; 0 0 5e-5];     % Process noise covariance
 sensor.P0 = 0;                                              % Signal power
+sensor.model = 'Ideal';                                     % Ideal sensor model (detections generated directly)
+% sensor.model = 'PhasedArray';                               % Realistic phased array sensor (4 arrays each covering 90 degrees, detections obtained via CFAR) 
 
 %% Filter parameter definitions
 filter.R_radar = sensor.R_radar;                            % Assume radar sensor noise is known

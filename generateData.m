@@ -72,21 +72,42 @@ for k = 1:T
     clutter_point{k} = data.data(data.true_num+1:data.counter, :);  % Select the data from clutter
     
     if data.counter > 0
-        measurement_all{k} = zeros(data.counter, 3);                % Set the size of the measurements at the current time step  
-        
-        % Generate radar noise
-        radar_noise = mvnrnd([0, 0], sensor.R_radar, data.true_num);
 
-        for i = 1:data.true_num
-            % Calculate the radar measurements of true landmark detections in relation to the platform
-            [r, az, snr] = radarMeasurement(platform, data.data(i,1:2), radar_noise(i,:), sensor.P0);
-            measurement_all{k}(i, :) = [r, az, snr];
-        end
+        if strcmpi(sensor.model,'Ideal')
+            % measurements obtained using idealised sensor model
+            measurement_all{k} = zeros(data.counter, 3);                % Set the size of the measurements at the current time step  
+            
+            % Generate radar noise
+            radar_noise = mvnrnd([0, 0], sensor.R_radar, data.true_num);
+    
+            for i = 1:data.true_num
+                % Calculate the radar measurements of true landmark detections in relation to the platform
+                [r, az, snr] = radarMeasurement(platform, data.data(i,1:2), radar_noise(i,:), sensor.P0);
+                measurement_all{k}(i, :) = [r, az, snr];
+            end
+            
+            for i = data.true_num+1:data.counter
+                % Calculate the radar measurements of the clutter in relation to the platform
+                [r, az, snr] = radarMeasurement(platform, data.data(i,1:2), [0, 0], sensor.P0);
+                measurement_all{k}(i, :) = [r, az, snr];
+            end
         
-        for i = data.true_num+1:data.counter
-            % Calculate the radar measurements of the clutter in relation to the platform
-            [r, az, snr] = radarMeasurement(platform, data.data(i,1:2), [0, 0], sensor.P0);
-            measurement_all{k}(i, :) = [r, az, snr];
+        elseif strcmpi(sensor.model,'PhasedArray')
+            % measurements obtained by simulating the phased array sensor
+            % and applying a CFAR algorithm
+
+            % rcs for true objects:
+            rcs_objects = 8*ones(data.true_num,1)+2*randn(data.true_num,1);
+
+            % rcs for false detections:
+            rcs_false = 0*ones(data.counter - data.true_num,1)+randn(data.counter - data.true_num,1);
+
+            % define points = [x,y,z,rcs] for detections
+            points = [data.data(1:data.true_num,1:2), zeros(data.true_num,1), rcs_objects]; % true detections
+            points = [points; data.data((data.true_num+1):end,1:2), zeros(data.counter - data.true_num,1), rcs_false]; % add in false detections
+            plat_state = [platform.x,platform.y,0,platform.theta];
+            Z = FMCW_array_radar_measurements(points,plat_state,0);
+            measurement_all{k} = Z;
         end
     end
     

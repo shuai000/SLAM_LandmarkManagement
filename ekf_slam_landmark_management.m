@@ -98,7 +98,7 @@ for k=1:T
         end
 
         % Cluster association and unconfirmed landmark management
-        if k ~= 1
+        if k ~= 1 && ~isempty(unconfirmed_landmarks(k-1).association_counter)
             % Associate clusters with existing unconfirmed landmarks and remove from clusters
             [unconfirmed_landmarks(k), clusters] = associateClusters(unconfirmed_landmarks(k-1), clusters, state(k).x_update, thresholds.association_radius);
 
